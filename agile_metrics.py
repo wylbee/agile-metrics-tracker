@@ -81,6 +81,7 @@ def main():
             x= alt.X("date_hour:T", title=""),
             y= alt.Y("count()", title="# of work items by Kanban column"),
             tooltip=[
+                alt.Tooltip("date_hour:T", title= 'Date/time'),
                 alt.Tooltip("column_name:N", title='Kanban column'),
                 alt.Tooltip("count()", title='# of work items')
             ],

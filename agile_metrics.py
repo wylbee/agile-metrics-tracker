@@ -34,8 +34,7 @@ df = create_df_from_query(
             *
        from dev_wbrown.kanban_column_status_by_hour 
 
-       where 
-        column_name not in ('[Resources]')
+       where column_name not in ('[Resources]')
 
        """
    )
@@ -44,7 +43,8 @@ df['date_hour'] = pd.to_datetime(df['date_hour'])
 
 
 # Set theme
-alt.themes.enable('vox')
+alt.themes.enable('latimes')
+
 
 # Define navigation structure
 
@@ -62,27 +62,69 @@ def main():
     week_lag = 6
     week_lag_date_hour = max_date_hour + pd.DateOffset(days=(-7*week_lag))
     
-
     filter_min_date = st.date_input('From:', min_value=min(min_date_hour, week_lag_date_hour), max_value=max_date_hour, value=week_lag_date_hour)
     filter_max_date = st.date_input('To:', min_value=min_date_hour, max_value=max_date_hour, value=max_date_hour)
 
-    #filtered_df = df[~df.column_name.isin(filter_categories) & df.date_hour >= filter_min_date & df.date_hour < filter_max_date]
+    # Apply filters
     
-    filtered_df = df.query(f'column_name != {filter_categories}')
-    filtered_df = filtered_df[
-        (filtered_df['date_hour'] >= pd.to_datetime(filter_min_date)) & 
-        (filtered_df['date_hour'] <= pd.to_datetime(filter_max_date))
+    filter_dates_df = df[
+        (df['date_hour'] >= pd.to_datetime(filter_min_date)) & 
+        (df['date_hour'] <= pd.to_datetime(filter_max_date))
         ]
+    filter_dates_categories_df = filter_dates_df.query(f'column_name != {filter_categories}')
+    
+
+    # WIP Graph
 
     st.altair_chart(
-        alt.Chart(filtered_df, width=(140*5)).mark_area().encode(
-            x="date_hour:T",
-            y="count()",
-            tooltip=["column_name:N","count()"],
-            color= alt.Color("column_name:O", sort=alt.SortField("hierarcy", order="descending")),
+        alt.Chart(filter_dates_categories_df, width=(140*5)).mark_area().encode(
+            x= alt.X("date_hour:T", title=""),
+            y= alt.Y("count()", title="# of work items by Kanban column"),
+            tooltip=[
+                alt.Tooltip("column_name:N", title='Kanban column'),
+                alt.Tooltip("count()", title='# of work items')
+            ],
+            color= alt.Color(
+                "column_name:O", 
+                sort=alt.SortField("hierarcy", order="descending"),
+                scale=alt.Scale(
+                    domain=['Archived', 'Backlog', 'Analysis', 'Ready for Work', 'Execute', 'Verify', 'Done'],
+                    range=['#4d4d4d', '#c4c4c4', '#f87f2c', '#9d9d9d', '#86bcdc', '#3887c0', '#757575']
+                ),
+                title='Kanban column'
+            ),
             order= alt.Order('hierarchy', sort='descending')
         ).properties(
-            title='WIP Area Chart'
+            title='WIP area chart'
+        ).configure_legend(
+            orient='bottom'
+        )
+    )
+
+    # CFD Graph
+
+    st.altair_chart(
+        alt.Chart(filter_dates_df, width=(140*5)).mark_area().encode(
+            x= alt.X("date_hour:T", title=""),
+            y= alt.Y("count()", title="# of work items by Kanban column"),
+            tooltip=[
+                alt.Tooltip("column_name:N", title='Kanban column'),
+                alt.Tooltip("count()", title='# of work items')
+            ],
+            color= alt.Color(
+                "column_name:O", 
+                sort=alt.SortField("hierarcy", order="descending"),
+                scale=alt.Scale(
+                    domain=['Archived', 'Backlog', 'Analysis', 'Ready for Work', 'Execute', 'Verify', 'Done'],
+                    range=['#4d4d4d', '#c4c4c4', '#f87f2c', '#9d9d9d', '#86bcdc', '#3887c0', '#757575']
+                ),
+                title='Kanban column'
+            ),
+            order= alt.Order('hierarchy', sort='descending')
+        ).properties(
+            title='Cumulative Flow Diagram'
+        ).configure_legend(
+            orient='bottom'
         )
     )
 

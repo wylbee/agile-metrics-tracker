@@ -43,6 +43,9 @@ df = create_df_from_query(
 df['date_hour'] = pd.to_datetime(df['date_hour'])
 
 
+# Set theme
+alt.themes.enable('vox')
+
 # Define navigation structure
 
 
@@ -51,10 +54,10 @@ def main():
     # Multi-select category filter
     categories = list(df['column_name'].unique())
     
-    filter_categories = st.multiselect('Which categories should be excluded??', options=categories, default= ['Archived', 'Done'])
+    filter_categories = st.multiselect('Which categories should be excluded?', options=categories, default= ['Archived', 'Done'])
 
     # Timeframe slider filter
-    max_date_hour = df['date_hour'].max()
+    max_date_hour = df['date_hour'].max() + pd.DateOffset(days=2)
     min_date_hour = df['date_hour'].min()
     week_lag = 6
     week_lag_date_hour = max_date_hour + pd.DateOffset(days=(-7*week_lag))
@@ -67,7 +70,8 @@ def main():
     
     filtered_df = df.query(f'column_name != {filter_categories}')
     filtered_df = filtered_df[
-        (filtered_df['date_hour'] >= pd.to_datetime(filter_min_date)) & (filtered_df['date_hour'] < pd.to_datetime(filter_max_date))
+        (filtered_df['date_hour'] >= pd.to_datetime(filter_min_date)) & 
+        (filtered_df['date_hour'] <= pd.to_datetime(filter_max_date))
         ]
 
     st.altair_chart(
@@ -75,8 +79,8 @@ def main():
             x="date_hour:T",
             y="count()",
             tooltip=["column_name:N","count()"],
-            color="column_name:N",
-            order= "hierarchy:N"
+            color= alt.Color("column_name:O", sort=alt.SortField("hierarcy", order="descending")),
+            order= alt.Order('hierarchy', sort='descending')
         ).properties(
             title='WIP Area Chart'
         )
@@ -85,4 +89,3 @@ def main():
 # Initialize app
 if __name__ == "__main__":
     main()
-

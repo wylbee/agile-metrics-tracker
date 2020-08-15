@@ -99,27 +99,45 @@ def main():
     # Text explanation
     st.markdown(
         f"""
-        The Average Lead Time for this system is {mean_lead_time}.
+        The Average Lead Time for this system is {mean_lead_time:.2f}.
         """
     )
 
     # Lead time
 
-    st.altair_chart(
-        alt.Chart(filter_dates_df_cfd, width=(140*5)).mark_line(color='#5ba3cf').encode(
-            x= 'date_day:T',
-            y= 'avg_lead_time:Q'
+    lead_time_graph = alt.Chart(filter_dates_df_cfd, width=(140*5)).mark_line(color='#5ba3cf').encode(
+            x= alt.X('date_day:T', title=''),
+            y= alt.Y('avg_lead_time:Q', title='Rolling 2 week average by date'),
+            tooltip=[
+                alt.Tooltip("date_day:T", title='Date'),
+                alt.Tooltip("avg_lead_time:Q", title= 'Avg lead time (2 week rolling)', format='.2f')
+            ]
         ).transform_calculate(
             avg_lead_time='(datum.avg_daily_inventory_past_two_weeks/datum.avg_daily_arrival_past_two_weeks)'
+        ).properties(
+            title='Average lead time'
         )
+    
+    cumulative_avg_lead_time = alt.Chart(filter_dates_df_cfd).mark_rule(color='grey').encode(
+        y='cumulative_avg_lead_time:Q',
+        size = alt.value(2),
+        tooltip= alt.Tooltip("cumulative_avg_lead_time:Q", format='.2f')
+    ).transform_aggregate(
+        num_records= 'distinct(date_day)',
+        total_arrivals= 'sum(num_arrivals)',
+        total_inventory= 'sum(num_inventory)'
+    ).transform_calculate(
+        cumulative_avg_lead_time = '(datum.total_inventory/datum.total_arrivals)'
     )
+
+    st.altair_chart(lead_time_graph + cumulative_avg_lead_time)
 
 
     # WIP Graph
 
     wip_graph = alt.Chart(filter_dates_categories_df, width=(140*5)).mark_area().encode(
             x= alt.X("date_hour:T", title=""),
-            y= alt.Y("count()", title="# of work items by Kanban column"),
+            y= alt.Y("count()", title="# of work items in Kanban column by date"),
             tooltip=[
                 alt.Tooltip("date_hour:T", title= 'Date/time'),
                 alt.Tooltip("column_name:N", title='Kanban column'),
@@ -172,7 +190,7 @@ def main():
 
     st.altair_chart(alt.Chart(filter_dates_df, width=(140*5)).mark_area().encode(
             x= alt.X("date_hour:T", title=""),
-            y= alt.Y("count()", title="# of work items by Kanban column"),
+            y= alt.Y("count()", title="# of work items in Kanban column by date"),
             tooltip=[
                 alt.Tooltip("date_hour:T", title= 'Date/time'),
                 alt.Tooltip("column_name:N", title='Kanban column'),

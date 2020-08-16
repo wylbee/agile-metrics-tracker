@@ -206,8 +206,12 @@ def main():
     # Text explanation of lead time
     st.markdown(
         f"""
-        This graphic should be used to compare the overall average lead time for the selected time frame to the 2 week rolling average lead time. This should serve as a top level indicator of whether the system is stable. The overall average lead time and 2 week rolling lead time should be roughly the same in a stable system. 
-        
+        This graphic should be used to compare the overall average lead time for the
+        selected time frame to the 2 week rolling average lead time. This should serve
+        as a top level indicator of whether the system is stable. The overall average
+        lead time and 2 week rolling lead time should be roughly the same in a stable
+        system.
+
         The average lead time for
         this system is {mean_lead_time:.2f} days over the total time frame. The most
         recent rolling 2 week average lead time is

@@ -227,8 +227,7 @@ def main():
 
     avg_arrival_rate = (
         arrival_rate.mark_line(strokeDash=[10, 1], color="#a778cb")
-        .transform_window(rolling_mean="mean(num_arrivals)", frame=[-7])
-        .encode(x="date_day:T", y="rolling_mean:Q")
+        .encode(x="date_day:T", y="avg_daily_arrival_past_two_weeks:Q")
     )
 
     inventory = (
@@ -239,8 +238,7 @@ def main():
 
     avg_inventory = (
         inventory.mark_line(strokeDash=[10, 1], color="#f8608f")
-        .transform_window(rolling_mean="mean(num_inventory)", frame=[-7])
-        .encode(x="date_day:T", y="rolling_mean:Q")
+        .encode(x="date_day:T", y="avg_daily_inventory_past_two_weeks:Q")
     )
 
     st.altair_chart(

@@ -13,8 +13,6 @@ db_db = os.getenv("SWA_DB_DB")
 db_user = os.getenv("SWA_DB_USER")
 db_pass = os.getenv("SWA_DB_PASS")
 
-# %%
-
 
 @st.cache
 def create_df_from_query(sql_query):
@@ -32,7 +30,7 @@ def create_df_from_query(sql_query):
     return df
 
 
-# Import data
+# Import data & clean up data types
 df = create_df_from_query(
     """
        select
@@ -59,21 +57,48 @@ df_cfd = create_df_from_query(
 
 df_cfd["date_day"] = pd.to_datetime(df_cfd["date_day"])
 
-# Set theme
+# Set viz theme
 alt.themes.enable("latimes")
 
-
-# Define navigation structure
+# Define app structure and logic
 
 
 def main():
 
     st.title("Agile Metrics for Personal Kanban")
+    st.subheader("Overview")
 
     # App description
     st.markdown(
         """
-        What is this tool?
+        The purpose of this app is to enable the measurement and management of the rate
+        at which items are moving through my personal kanban system. It uses the
+        following tools/concepts to do so:
+
+        - WIP Area Chart/Cumulative Flow Diagram: displays the number of items in each
+        column over time. WIP has done items excluded, while the CFD allows them to
+        accummulate on the graph.
+        - Arrival Rate: number of items added to the workflow every day.
+        - Inventory: total number of items in the workflow.
+        - Average Lead Time: amount of time that a work item stays in the system.
+
+        """
+    )
+
+    st.subheader("Kanban configuration")
+    st.markdown(
+        """
+        The set up of the kanban system is as follows:
+
+        1. Backlog: Unopinionated intake of new work items.
+        2. Analysis: Scoping items with a definition ofdone and make a go/no go call.
+        If the item is a no go archive it.
+        3. Ready for Work: Scoped items ready to be worked on.
+        4. Execute: Complete scoped work on items.
+        5. Verify: Ensure work is done.
+        6. Done: Completed work, held until WIP limit is met.
+        7. Archived: Completed work stored off board.
+
         """
     )
 
@@ -122,6 +147,16 @@ def main():
     mean_inventory = filter_dates_df_cfd["num_inventory"].mean()
     mean_lead_time = mean_inventory / mean_arrival_rate
 
+    # most recent avg lead time value
+
+    most_recent_lead_time = filter_dates_df_cfd[
+        (filter_dates_df_cfd["date_day"] == filter_dates_df_cfd["date_day"].max())
+    ].assign(
+        avg_lead_time=lambda x: x.avg_daily_inventory_past_two_weeks
+        / x.avg_daily_arrival_past_two_weeks
+    )
+
+    st.header("Metrics")
     # Lead time
 
     lead_time_graph = (
@@ -171,8 +206,10 @@ def main():
     # Text explanation of lead time
     st.markdown(
         f"""
-        The Average Lead Time for this system is {mean_lead_time:.2f}.
-        Why does this matter?
+        This graphic should be used to compare the overall The average lead time for
+        this system is {mean_lead_time:.2f} days over the total time frame. The most
+        recent rolling 2 week average lead time is
+        {most_recent_lead_time.iloc[0]["avg_lead_time"]} days.
         """
     )
 
@@ -225,10 +262,9 @@ def main():
         .encode(x="date_day:T", y="num_arrivals")
     )
 
-    avg_arrival_rate = (
-        arrival_rate.mark_line(strokeDash=[10, 1], color="#a778cb")
-        .encode(x="date_day:T", y="avg_daily_arrival_past_two_weeks:Q")
-    )
+    avg_arrival_rate = arrival_rate.mark_line(
+        strokeDash=[10, 1], color="#a778cb"
+    ).encode(x="date_day:T", y="avg_daily_arrival_past_two_weeks:Q")
 
     inventory = (
         alt.Chart(filter_dates_df_cfd)
@@ -236,9 +272,8 @@ def main():
         .encode(x="date_day:T", y="num_inventory")
     )
 
-    avg_inventory = (
-        inventory.mark_line(strokeDash=[10, 1], color="#f8608f")
-        .encode(x="date_day:T", y="avg_daily_inventory_past_two_weeks:Q")
+    avg_inventory = inventory.mark_line(strokeDash=[10, 1], color="#f8608f").encode(
+        x="date_day:T", y="avg_daily_inventory_past_two_weeks:Q"
     )
 
     st.altair_chart(
@@ -248,7 +283,20 @@ def main():
     # Text explanation of WIP chart
     st.markdown(
         """
-        How to use?
+        This graphic should be used in two steps.
+
+        First, observe the trends. The pink trend line is a 2 week rolling average of
+        daily inventory. The purple trend line is a 2 week rolling average of daily
+        arrival rate.
+
+        - If they are moving away from each other, then the system is not stable and
+        needs intervention to address inventory buildup.
+        - If they are moving towards each other, then the system is starved and can
+        likely intake more items.
+        - If the lines are flat, then the system is stable.
+
+        Second, observe how work is flowing through different categories to identify
+        bottlenecks and plan system adjustments.
         """
     )
 
@@ -256,3 +304,5 @@ def main():
 # Initialize app
 if __name__ == "__main__":
     main()
+
+# %%

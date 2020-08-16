@@ -37,7 +37,7 @@ df = create_df_from_query(
     """
        select
             *
-       from dev_wbrown.kanban_column_status_by_hour
+       from mart_project_management.kanban_column_status_by_hour
 
        where column_name not in ('[Resources]')
 
@@ -51,7 +51,7 @@ df_cfd = create_df_from_query(
     """
     select
         *
-    from dev_wbrown.snap_kanban_daily_flow
+    from mart_project_management.snap_kanban_daily_flow
 
     where date_day >= '2020-07-06'
     """
